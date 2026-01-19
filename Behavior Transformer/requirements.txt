@@ -1,0 +1,5 @@
+torch>=1.10.0
+numpy
+scikit-learn
+gym
+mingpt  # karpathy/minGPT 레포지토리 참조 필요
