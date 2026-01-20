@@ -15,27 +15,30 @@ class BehaviorTransformer(nn.Module):
                              else torch.tensor(kmeans_centers))
         
         # 2. Prediction Heads
-        # (A) Classification Head: 어떤 클러스터(Action Center)인지 예측
+        # (A) Classification Head: predict Action Center
         self.class_head = nn.Linear(config.n_embd, n_clusters)
         
-        # (B) Offset Head: 해당 클러스터 중심으로부터의 잔차(Offset) 예측
+        # (B) Offset Head: predict Offset from Center
         # 입력 차원 당 n_clusters개의 오프셋을 예측 (선택된 클러스터 것만 사용)
         self.offset_head = nn.Linear(config.n_embd, n_clusters * config.action_dim)
 
     def forward(self, x):
-        # x shape: (Batch, Sequence_Length, Input_Dim)
+        """
+        x shape: (Batch, Sequence_Length, Input_Dim)
+        """
         
-        # Transformer를 통과해 특징 추출
-        features = self.transformer(x) # (B, T, n_embd)
+        # feature extraction via Transformer
+        # (B, T, input_dim) -> (B, T, n_embd)
+        features = self.transformer(x)
 
-        # --- 핵심 로직 ---
+        # Main Logics
         
-        # 1. Logits 예측 (Focal Loss용)
-        # 어떤 행동 모드(Cluster)를 선택할지 확률 계산
+        # 1. Predict Logits (Focal Loss)
         class_logits = self.class_head(features) 
 
-        # 2. Offsets 예측 (Masked MSE Loss용)
+        # 2. Predict Offsets (Masked MSE Loss)
         # 모든 클러스터에 대한 오프셋을 예측한 뒤, 나중에 정답 클러스터 것만 선택
+        # (B, T, K * action_dim) -> (B, T, K, action_dim)
         all_offsets = self.offset_head(features)
         all_offsets = all_offsets.view(features.shape[0], features.shape[1], -1, self.config.action_dim)
 
