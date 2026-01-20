@@ -34,7 +34,11 @@ class BeTLoss(nn.Module):
         self.n_clusters = n_clusters
         self.focal_loss_fn = FocalLoss(alpha=focal_alpha, gamma=focal_gamma)
         
-    def forward(self, pred_logits, pred_offsets, target_labels, true_offsets):
+    def forward(self, 
+                pred_logits: torch.Tensor, 
+                pred_offsets: torch.Tensor, 
+                target_labels: torch.Tensor, 
+                true_offsets: torch.Tensor):
         """
         pred_logits: (B, T, K) - predicted class logits
         pred_offsets: (B, T, K, Action_Dim) - predicted action offsets
@@ -48,6 +52,8 @@ class BeTLoss(nn.Module):
         # (B, T) -> (B, T, 1, 1) -> (B, T, 1, Action_Dim)
         target_indices = target_labels.unsqueeze(-1).unsqueeze(-1).expand(-1, -1, 1, self.action_dim)
 
+        # Gather the predicted offsets corresponding to the true class labels
+        # (B, T, 1, Action_Dim) -> (B, T, Action_Dim)
         selected_pred_offsets = torch.gather(pred_offsets, 2, target_indices).squeeze(2)
 
         offset_loss = F.mse_loss(selected_pred_offsets, true_offsets, reduction='mean')
