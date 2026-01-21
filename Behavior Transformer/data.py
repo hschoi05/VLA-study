@@ -13,7 +13,7 @@ class BeTPreprocessor:
         학습 데이터셋의 모든 행동을 모아서 K-Means 클러스터링을 수행합니다.
         
         Args:
-            all_actions (np.array): (Total_Samples, Action_Dim) 크기의 전체 행동 데이터
+            all_actions (np.array): (NT, Action_Dim) 크기의 전체 행동 데이터
         """
         print(f"Fitting KMeans with {self.n_clusters} clusters...")
         self.kmeans.fit(all_actions)
@@ -25,11 +25,11 @@ class BeTPreprocessor:
         개별 행동(또는 배치)을 모델 학습용 타겟(Label, Offset)으로 변환합니다.
         
         Args:
-            actions (np.array or torch.Tensor): (Batch, Action_Dim)
+            actions (np.array or torch.Tensor): (B, Action_Dim)
             
         Returns:
-            target_labels (torch.LongTensor): (Batch,) - 가장 가까운 클러스터 인덱스
-            true_offsets (torch.FloatTensor): (Batch, Action_Dim) - (실제 행동 - 클러스터 중심)
+            target_labels (torch.LongTensor): (B,) - 가장 가까운 클러스터 인덱스
+            true_offsets (torch.FloatTensor): (B, Action_Dim) - (실제 행동 - 클러스터 중심)
         """
         if isinstance(actions, torch.Tensor):
             actions = actions.cpu().numpy()
@@ -57,8 +57,8 @@ from torch.utils.data import Dataset, DataLoader
 class RobotBehaviorDataset(Dataset):
     def __init__(self, observations, actions, preprocessor):
         """
-        observations: (N, Sequence_Length, Obs_Dim)
-        actions: (N, Sequence_Length, Action_Dim)
+        observations: (N, T, Obs_Dim)
+        actions: (N, T, Action_Dim)
         preprocessor: 학습된 BeTPreprocessor 인스턴스
         """
         self.observations = observations
@@ -66,15 +66,22 @@ class RobotBehaviorDataset(Dataset):
         self.preprocessor = preprocessor
 
     def __len__(self):
-        return len(self.observations)
+        return len(self.observations) # (N,)
 
     def __getitem__(self, idx):
+        """
+        Returns:
+            obs_seq: (T, Obs_Dim)
+            target_labels: (T,) - 각 타임스텝별 클러스터 인덱스
+            true_offsets: (T, Action_Dim) - 각 타임스텝별 오프셋
+        """
         # 1. 원본 데이터 가져오기
         obs_seq = torch.FloatTensor(self.observations[idx]) # (T, Obs_Dim)
         action_seq = torch.FloatTensor(self.actions[idx])   # (T, Action_Dim)
 
         # 2. 행동 데이터를 BeT 학습용 타겟으로 변환
-        # Sequence 전체에 대해 한 번에 처리 (T, Action_Dim) -> (T,), (T, Action_Dim)
+        # Sequence 전체에 대해 한 번에 처리
+        # (T, Action_Dim) -> (T,), (T, Action_Dim)
         target_labels, true_offsets = self.preprocessor.process(action_seq)
 
         return {

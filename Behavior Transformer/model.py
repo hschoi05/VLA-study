@@ -10,6 +10,7 @@ class BehaviorTransformer(nn.Module):
         self.transformer = GPT(config)
 
         # K-Means로 미리 계산된 클러스터 센터 (Action Centers)
+        # (K, Action_Dim)
         self.register_buffer('cluster_centers', 
                              kmeans_centers if isinstance(kmeans_centers, torch.Tensor) 
                              else torch.tensor(kmeans_centers))
@@ -34,6 +35,7 @@ class BehaviorTransformer(nn.Module):
         # Main Logics
         
         # 1. Predict Logits (Focal Loss)
+        # (B, T, n_embd) -> (B, T, K)
         class_logits = self.class_head(features) 
 
         # 2. Predict Offsets (Masked MSE Loss)

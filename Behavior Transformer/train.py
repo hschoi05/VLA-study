@@ -24,14 +24,21 @@ def train():
     # 2. 데이터 준비 (Dummy Data 예시)
     # 실제 프로젝트에서는 .npy 파일을 로드하거나 파싱해야 합니다.
     # 예: total_obs (N, T, input_dim), total_actions (N, T, action_dim)
-    print("Loading data...")
-    # 가정: 1000개의 에피소드, 길이 50
-    raw_obs = np.random.randn(1000, cfg.context_len, cfg.input_dim).astype(np.float32)
-    raw_actions = np.random.randn(1000, cfg.context_len, cfg.action_dim).astype(np.float32)
+    print("Loading Pendulum data...")
+    data_dir = "data"
+    obs_path = os.path.join(data_dir, "pendulum_obs.npy")
+    act_path = os.path.join(data_dir, "pendulum_actions.npy")
+
+    if not os.path.exists(obs_path) or not os.path.exists(act_path):
+        raise FileNotFoundError("Data files not found. Please run generate_data.py first.")
+
+    raw_obs = np.load(obs_path)
+    raw_actions = np.load(act_path)
+    print(f"Loaded Obs: {raw_obs.shape}, Actions: {raw_actions.shape}")
 
     # 3. 데이터 전처리 (K-Means Clustering)
     print("Fitting KMeans for action clustering...")
-    # Flatten actions to (Total_Samples, Action_Dim) for clustering
+    # Flatten actions to (NT, Action_Dim) for clustering
     flat_actions = raw_actions.reshape(-1, cfg.action_dim)
     
     preprocessor = BeTPreprocessor(n_clusters=cfg.n_clusters)
@@ -48,6 +55,7 @@ def train():
 
     # 5. 모델 초기화
     # 중요: Preprocessor가 찾은 클러스터 센터를 모델에 등록해야 함
+    # (K, Action_Dim)
     cluster_centers = preprocessor.get_centers().to(device)
     
     model = BehaviorTransformer(

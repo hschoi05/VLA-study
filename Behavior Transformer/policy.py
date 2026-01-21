@@ -12,7 +12,7 @@ class BeTPolicy:
         deterministic: True면 확률이 가장 높은 행동 선택, False면 확률 분포에 따라 샘플링
         """
         with torch.no_grad():
-            # 1. 모델 Forward
+            # 1. Model Forward
             # class_logits: (B, T, K)
             # all_offsets: (B, T, K, Action_Dim)
             class_logits, all_offsets = self.model(obs_seq)
@@ -29,6 +29,7 @@ class BeTPolicy:
                 cluster_idxs = torch.argmax(probs, dim=-1) # (B,)
             else:
                 # 확률 분포에 기반하여 샘플링 (Stochastic) - 탐험(Exploration)이 필요할 때 사용
+                # (B, K) -> (B, 1) -> (B,)
                 cluster_idxs = torch.multinomial(probs, num_samples=1).squeeze(-1)
 
             # 3. 해당 클러스터의 Center와 Offset 가져오기

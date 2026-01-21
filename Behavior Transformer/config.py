@@ -12,13 +12,13 @@ class BeTConfig:
     context_len = 10 
     
     # 관측값 차원 (환경에 따라 다름, 예: 로봇 팔 관절 각도 7개 + 위치 3개 = 10)
-    input_dim = 10  
+    input_dim = 3  # Pendulum: cos(theta), sin(theta), theta_dot
     
     # 행동 차원 (예: 관절 토크 7개)
-    action_dim = 7  
+    action_dim = 1  # Pendulum: Torque
 
     # Cluster 개수 (K): 논문에서는 24 ~ 100 사이 권장
-    n_clusters = 24 
+    n_clusters = 10 # 행동 공간이 단순하므로 클러스터 수를 줄임
 
     # Transformer 크기 (MinGPT / GPT-2 Small 수준)
     n_layer = 4        # 레이어 깊이
